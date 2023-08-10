@@ -1,0 +1,41 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: codedthoughts
+  datasource:
+    url: jdbc:mysql://localhost:3306/codedthoughts
+    username: root
+    password: password
+  jpa:
+    show-sql: true
+    hibernate:
+      dialect: org.hibernate.dialect.MySQLDialect
+      format-sql: true
+      ddl-auto: update
+  security:
+    filter:
+      order: 10
+
+app:
+  # ,R-!belR=AwTp{a,q5yW#ujpnmw}Vc{~!y~W38UZ8KKt$jwKuo
+  jwt-secret: LFItIWJlbFI9QXdUcHthLHE1eVcjdWpwbm13fVZje34heX5XMzhVWjhLS3QkandLdW8=
+  jwt-expiration-milliseconds: 604800000
+
+#---
+#
+#server:
+#  port: ${server_port}
+#spring:
+#  application:
+#    name: codedthoughts
+#  profiles: prod
+#  datasource:
+#    driverClassName: com.mysql.jdbc.Driver
+#    url: jdbc:mysql://${db_host}:${db_port}/codedthoughts
+#    username: ${db_user}
+#    password: ${db_password}
+#  jpa:
+#    show-sql: true
+#    hibernate:
+#      ddl-auto: update
