@@ -4,9 +4,9 @@ spring:
   application:
     name: codedthoughts
   datasource:
-    url: jdbc:mysql://localhost:3306/codedthoughts
-    username: root
-    password: password
+    url: jdbc:mysql://${DB_HOST}:3306/codedthoughts
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   jpa:
     show-sql: true
     hibernate:
