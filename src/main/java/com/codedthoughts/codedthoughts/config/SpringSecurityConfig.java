@@ -19,6 +19,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.Collections;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -39,9 +41,6 @@ public class SpringSecurityConfig {
         http
             // Disable CSRF
             .csrf(AbstractHttpConfigurer::disable)
-
-            .cors(AbstractHttpConfigurer::disable)
-
             // Set session management to stateless
             .sessionManagement((session) -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -68,7 +67,7 @@ public class SpringSecurityConfig {
             )
 
             .authenticationProvider(authenticationProvider)
-
+                .addFilterBefore(new com.codedthoughts.codedthoughts.config.CorsFilter(),UsernamePasswordAuthenticationFilter.class)
             // Add JWT token filter
             .addFilterBefore(
                     jwtAuthenticationFilter,
@@ -78,16 +77,18 @@ public class SpringSecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin("*");
-        configuration.addAllowedHeader("*");
-        configuration.addAllowedMethod("*");
-        source.registerCorsConfiguration("/**", configuration);
-        return new CorsFilter(source);
-    }
+//    @Bean
+//    public CorsFilter corsFilter() {
+//        UrlBasedCorsConfigurationSource source =
+//                new UrlBasedCorsConfigurationSource();
+//        CorsConfiguration configuration = new CorsConfiguration();
+//        configuration.setAllowCredentials(true);
+//        configuration.addAllowedOrigin("*");
+//        configuration.addAllowedHeader("*");
+//        configuration.addAllowedMethod("*");
+//        configuration.setExposedHeaders(Collections.singletonList("xsrf-token"));
+//        configuration.setAllowedOrigins(Collections.singletonList("http://127.0.0.1:5173/"));
+//        source.registerCorsConfiguration("http://127.0.0.1:5173/", configuration);
+//        return new CorsFilter(source);
+//    }
 }

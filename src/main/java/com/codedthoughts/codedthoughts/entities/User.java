@@ -1,6 +1,10 @@
 package com.codedthoughts.codedthoughts.entities;
 
 import com.codedthoughts.codedthoughts.enums.Role;
+import com.codedthoughts.codedthoughts.util.CustomDateDeserializer;
+import com.codedthoughts.codedthoughts.util.CustomDateSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -40,6 +44,8 @@ public class User extends BaseEntity implements UserDetails {
 
     @Temporal(TemporalType.DATE)
     @Column(name = "dob")
+    @JsonSerialize(using = CustomDateSerializer.class)
+    @JsonDeserialize(using = CustomDateDeserializer.class)
     private Date DOB;
 
     @Enumerated(EnumType.STRING)
