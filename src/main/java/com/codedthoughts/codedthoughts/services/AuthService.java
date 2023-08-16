@@ -27,14 +27,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
 
-    public Optional<LoginResponseView> doLogin(AuthRequestView authRequestView) throws BadCredentialsException, Exception{
-        Authentication authenticate = authenticationManager
-                .authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                authRequestView.getUserName(),
-                                authRequestView.getPassword()
-                        )
-                );
+    public Optional<LoginResponseView> doLogin(AuthRequestView authRequestView) throws BadCredentialsException{
+        Authentication authenticate = authenticate(authRequestView.getUsername(), authRequestView.getPassword());
         org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) authenticate.getPrincipal();
         SecurityContextHolder.getContext().setAuthentication(authenticate);
         return Optional.of(LoginResponseView
@@ -44,15 +38,26 @@ public class AuthService {
                             .build());
     }
 
-    public void doSignup(SignupRequestView signupView) throws UserAlreadyExistException {
+    public Optional<LoginResponseView> doSignup(SignupRequestView signupView) throws UserAlreadyExistException, BadCredentialsException {
         User newUser = User
                 .builder()
-                .userName(signupView.getUserName())
+                .userName(signupView.getUsername())
                 .email(signupView.getEmail())
                 .password(passwordEncoder.encode(signupView.getPassword()))
                 .DOB(signupView.getDOB())
                 .role(Role.USER)
                 .build();
         userService.addUser(newUser);
+        Authentication authentication = authenticate(signupView.getUsername(), signupView.getPassword());
+        return Optional.of(LoginResponseView
+                .builder()
+                .userName(signupView.getUsername())
+                .token(jwtTokenUtil.generateJwtToken(authentication))
+                .build());
+
+    }
+
+    private Authentication authenticate(String username, String password) throws BadCredentialsException {
+        return authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
     }
 }

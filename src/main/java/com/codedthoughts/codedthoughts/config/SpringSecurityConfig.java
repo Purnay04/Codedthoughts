@@ -40,6 +40,8 @@ public class SpringSecurityConfig {
             // Disable CSRF
             .csrf(AbstractHttpConfigurer::disable)
 
+            .cors(AbstractHttpConfigurer::disable)
+
             // Set session management to stateless
             .sessionManagement((session) -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

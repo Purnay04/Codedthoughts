@@ -18,7 +18,7 @@ import java.util.Date;
 public class SignupRequestView {
 
 //    @Pattern(regexp = RegexpConstants.USERNAME_REGEX, message = "Please re-enter the User Name with only Alphabets, Number & only Special Character As _ !")
-    private String userName;
+    private String username;
 
 //    @Min(value = 8)
 //    @Pattern(regexp = RegexpConstants.PASSWORD_REGEX, message = "Please re-enter the Password!")
@@ -26,4 +26,14 @@ public class SignupRequestView {
 
     private String email;
     private Date DOB;
+
+    @Override
+    public String toString() {
+        return "SignupRequestView{" +
+                "userName='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", email='" + email + '\'' +
+                ", DOB=" + DOB +
+                '}';
+    }
 }

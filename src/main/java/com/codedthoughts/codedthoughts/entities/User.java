@@ -7,9 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @Setter
@@ -17,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "ctuser")
-public class User implements UserDetails {
+public class User extends BaseEntity implements UserDetails {
     @Id
     @TableGenerator(
             name = "CT_SEQ",
@@ -28,10 +26,10 @@ public class User implements UserDetails {
             allocationSize = 4
     )
     @GeneratedValue(strategy = GenerationType.TABLE, generator = "CT_SEQ")
-    @Column(name = "user_id")
+    @Column(name = "id")
     private Integer userId;
 
-    @Column(name = "user_name")
+    @Column(name = "username")
     private String userName;
 
     @Column(name = "password")
@@ -40,11 +38,18 @@ public class User implements UserDetails {
     @Column(name = "email")
     private String email;
 
+    @Temporal(TemporalType.DATE)
     @Column(name = "dob")
     private Date DOB;
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<Blog> blogs = new HashSet<>();
+
+//    @ManyToMany(mappedBy = "bookmarkBy", fetch = FetchType.EAGER)
+//    private Set<Blog> bookmarks = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -75,4 +80,17 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        return Objects.equals(getUserId(), user.getUserId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(userId);
+    }
+
 }
