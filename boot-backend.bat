@@ -13,5 +13,3 @@ docker image prune -f --filter "dangling=true"
 
 REM Run Docker Compose to bring up containers
 start "codedthoughts-backend" docker-compose -f ./dockerfiles/compose.yml --profile backend up --build
-
-exit

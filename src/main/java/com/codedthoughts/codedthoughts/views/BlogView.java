@@ -8,13 +8,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Builder
 @Getter
 @Setter
 @AllArgsConstructor
 public class BlogView {
-    private Integer blogId;
+    private UUID blogId;
     @NotNull private String blogTitle;
     @NotNull private String username;
     private String blogSubTitle;

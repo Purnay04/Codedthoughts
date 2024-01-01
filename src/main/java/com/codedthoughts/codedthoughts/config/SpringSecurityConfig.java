@@ -11,15 +11,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-
-import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -29,6 +22,8 @@ public class SpringSecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     private final AuthenticationProvider authenticationProvider;
+
+    private final CorsFilter corsFilter;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
@@ -41,6 +36,7 @@ public class SpringSecurityConfig {
         http
             // Disable CSRF
             .csrf(AbstractHttpConfigurer::disable)
+
             // Set session management to stateless
             .sessionManagement((session) -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -62,12 +58,19 @@ public class SpringSecurityConfig {
             .authorizeHttpRequests((requestCustomizer) -> requestCustomizer
                     // Our public endpoints
                     .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("api/blog/get-att/**").permitAll()
                     // Our private endpoints
                     .anyRequest().authenticated()
             )
 
             .authenticationProvider(authenticationProvider)
-                .addFilterBefore(new com.codedthoughts.codedthoughts.config.CorsFilter(),UsernamePasswordAuthenticationFilter.class)
+
+            // Add CorsFilter
+            .addFilterBefore(
+                    corsFilter,
+                    UsernamePasswordAuthenticationFilter.class
+            )
+
             // Add JWT token filter
             .addFilterBefore(
                     jwtAuthenticationFilter,
@@ -76,19 +79,4 @@ public class SpringSecurityConfig {
 
         return http.build();
     }
-
-//    @Bean
-//    public CorsFilter corsFilter() {
-//        UrlBasedCorsConfigurationSource source =
-//                new UrlBasedCorsConfigurationSource();
-//        CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowCredentials(true);
-//        configuration.addAllowedOrigin("*");
-//        configuration.addAllowedHeader("*");
-//        configuration.addAllowedMethod("*");
-//        configuration.setExposedHeaders(Collections.singletonList("xsrf-token"));
-//        configuration.setAllowedOrigins(Collections.singletonList("http://127.0.0.1:5173/"));
-//        source.registerCorsConfiguration("http://127.0.0.1:5173/", configuration);
-//        return new CorsFilter(source);
-//    }
 }

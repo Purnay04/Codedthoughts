@@ -2,10 +2,12 @@ package com.codedthoughts.codedthoughts.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 @Builder
 @Entity
@@ -29,6 +31,9 @@ public class Blog extends BaseEntity{
     @Column(name = "id")
     private Integer blogId;
 
+    @Column(name = "unique_id")
+    private UUID uniqueId;
+
     @Column(name = "title")
     private String title;
 
@@ -48,8 +53,21 @@ public class Blog extends BaseEntity{
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
+    @OneToMany(mappedBy = "blog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BlogAttachment> inlineAttachments;
+
 //    @ManyToMany(fetch = FetchType.LAZY)
 //    private Set<User> bookmarkBy = new HashSet<>();
+
+    @PrePersist
+    public void prePersist() {
+        if(!CollectionUtils.isEmpty(inlineAttachments)) {
+            inlineAttachments.forEach(att -> {
+                att.setBlogId(this.getUniqueId());
+                att.setBlog(this);
+            });
+        }
+    }
 
     @Override
     public boolean equals(Object o) {
