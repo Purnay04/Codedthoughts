@@ -51,11 +51,16 @@ public class User extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user")
     private Set<Blog> blogs = new HashSet<>();
 
-//    @ManyToMany(mappedBy = "bookmarkBy", fetch = FetchType.EAGER)
-//    private Set<Blog> bookmarks = new HashSet<>();
+    @ManyToMany(cascade = CascadeType.REMOVE)
+    @JoinTable(
+            name = "ctuserbookmarks",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "blog_id")
+    )
+    private Set<Blog> bookmarks = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

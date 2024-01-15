@@ -86,14 +86,14 @@ public class BlogApi {
         return ResponseEntity.ok(Map.of("blog", blogView));
     }
 
-    @PostMapping("/add-att/{draftedBlogId}")
+    @PostMapping("/addAttachment/{draftedBlogId}")
     public ResponseEntity<?> addBlogAtt(@PathVariable("draftedBlogId") UUID draftedBlogId, @RequestBody MultipartFile file) {
         if(!file.isEmpty()) {
             String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
             try {
                 UUID blogAttId = blogService.addBlogAttachment(file, draftedBlogId);
                 return ResponseEntity.ok(Map.of(
-                        "attUrl", baseUrl + "/api/blog/get-att/" + blogAttId
+                        "attUrl", baseUrl + "/api/blog/attachment/" + blogAttId
                 ));
             } catch (InvalidMimeTypeException imte) {
                 logger.debug("File Error at /blog/add-att: Invalid file attached!");
@@ -108,10 +108,10 @@ public class BlogApi {
         }
     }
 
-    @GetMapping("/get-att/{blogAttId}")
-    public ResponseEntity<?> getBlogAtt(@PathVariable("blogAttId") UUID blogAttId) {
+    @GetMapping("/attachment/{attachmentId}")
+    public ResponseEntity<?> getBlogAtt(@PathVariable("attachmentId") UUID attachmentId) {
         try{
-            BlogAttachment blogAtt = blogService.getBlogAttachment(blogAttId);
+            BlogAttachment blogAtt = blogService.getBlogAttachment(attachmentId);
             Optional<byte[]> contents = blogService.blobToByteArray(blogAtt.getFileContents());
             HttpHeaders headers = new HttpHeaders();
             if(contents.isPresent()) {
@@ -125,5 +125,27 @@ public class BlogApi {
             logger.debug("File Retrieve error at /blog/get-att");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @PostMapping("/referAttachment/{attachmentId}")
+    public ResponseEntity<?> saveReferredAttachmentInstance(@PathVariable("attachmentId") UUID attachmentId) {
+        try {
+            this.blogService.addRefToAttachment(attachmentId);
+        } catch (NoSuchElementPresentException nsep) {
+            logger.debug(String.format("Invalid Attachment Id Provided: %s", attachmentId));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/removeAttachment/{attachmentId}")
+    public ResponseEntity<?> removeAttachment(@PathVariable("attachmentId") UUID attachmentId) {
+        try {
+            this.blogService.removeAttachment(attachmentId);
+        } catch (NoSuchElementPresentException nsep) {
+            logger.debug(String.format("Invalid Attachment Id Provided: %s", attachmentId));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        return ResponseEntity.ok().build();
     }
 }

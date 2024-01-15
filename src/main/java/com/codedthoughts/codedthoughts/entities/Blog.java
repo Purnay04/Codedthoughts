@@ -3,7 +3,6 @@ package com.codedthoughts.codedthoughts.entities;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.ObjectUtils;
 
 import java.util.Objects;
 import java.util.Set;
@@ -56,8 +55,8 @@ public class Blog extends BaseEntity{
     @OneToMany(mappedBy = "blog", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BlogAttachment> inlineAttachments;
 
-//    @ManyToMany(fetch = FetchType.LAZY)
-//    private Set<User> bookmarkBy = new HashSet<>();
+    @ManyToMany(mappedBy = "bookmarks", cascade = CascadeType.REMOVE)
+    private Set<User> bookmarkBy;
 
     @PrePersist
     public void prePersist() {

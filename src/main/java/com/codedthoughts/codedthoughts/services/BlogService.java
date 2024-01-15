@@ -107,14 +107,18 @@ public class BlogService {
         }
 
         if(!inlineAttachmentIds.isEmpty()) {
+            Map<UUID, Integer> attachmentCounter = new HashMap<>();
             Set<BlogAttachment> inlineAttachments = inlineAttachmentIds.stream()
                     .map(uuid -> {
                         BlogAttachment blogAttachment = this.blogAttRepository.findByUniqueId(UUID.fromString(uuid)).orElseThrow();
                         if(!ObjectUtils.isEmpty(blog) && !blog.getInlineAttachments().contains(blogAttachment)) {
                             blogAttachment.setBlog(blog);
                         }
+                        Integer attachmentCount = attachmentCounter.get(blogAttachment.getUniqueId());
+                        attachmentCounter.put(blogAttachment.getUniqueId(), ObjectUtils.isEmpty(attachmentCount) ? 1 : attachmentCount + 1);
                         return blogAttachment;
                     })
+                    .peek(blogAtt -> blogAtt.setRefCount(attachmentCounter.get(blogAtt.getUniqueId())))
                     .collect(Collectors.toSet());
 
             //remove if any non-linked attachments is left
@@ -186,29 +190,61 @@ public class BlogService {
         return blogRepository.findByUniqueId(blogId).orElseThrow(() -> new NoSuchElementPresentException(blogId.toString()));
     }
 
+    @Transactional(readOnly = true)
+    public Optional<BlogAttachment> checkAttachmentDuplication(String checksum, UUID blogId) {
+        return blogAttRepository.findByChecksumAndBlogId(checksum, blogId);
+    }
+
     @Transactional(rollbackFor = {IOException.class, NoSuchAlgorithmException.class})
     public UUID addBlogAttachment(MultipartFile file, UUID draftedBlogId) throws IOException, NoSuchAlgorithmException, InvalidMimeTypeException {
         List<String> supportedMimeTypes = getSupportedMimeTypes();
         if(!ObjectUtils.isEmpty(file.getContentType()) && supportedMimeTypes.contains(file.getContentType())) {
             String checksum = calculateMD5Checksum(file.getBytes());
-            BlogAttachment blogAtt = BlogAttachment
-                    .builder()
-                    .fileName(file.getName())
-                    .fileSize(file.getSize())
-                    .contentType(file.getContentType())
-                    .fileContents(convertByteArrayToBlob(file.getBytes()))
-                    .blogId(draftedBlogId)
-                    .checksum(checksum)
-                    .build();
-            blogAttRepository.save(blogAtt);
+            Optional<BlogAttachment> existingAttachment;
+            BlogAttachment blogAtt;
+            if((existingAttachment = checkAttachmentDuplication(checksum, draftedBlogId)).isPresent()) {
+                blogAtt = existingAttachment.get();
+                blogAtt.setRefCount(blogAtt.getRefCount() + 1);
+                blogAttRepository.save(blogAtt);
+            }
+            else {
+                 blogAtt = BlogAttachment
+                        .builder()
+                        .fileName(file.getOriginalFilename())
+                        .fileSize(file.getSize())
+                        .contentType(file.getContentType())
+                        .fileContents(convertByteArrayToBlob(file.getBytes()))
+                        .blogId(draftedBlogId)
+                        .checksum(checksum)
+                        .refCount(1)
+                        .build();
+                blogAttRepository.save(blogAtt);
+            }
             return blogAtt.getUniqueId();
         }
         logger.debug(String.format("Invalid file type attached: %s", file.getContentType()));
         throw new InvalidMimeTypeException(file.getContentType(), "Invalid file Attached!!");
     }
 
-    @Transactional(readOnly = true, rollbackFor = NoSuchElementPresentException.class)
-    public BlogAttachment getBlogAttachment(UUID attId) throws NoSuchElementPresentException {
-        return blogAttRepository.findByUniqueId(attId).orElseThrow(() -> new NoSuchElementPresentException(String.valueOf(attId)));
+    @Transactional(readOnly = true)
+    public BlogAttachment getBlogAttachment(UUID attachmentId) throws NoSuchElementPresentException {
+        return blogAttRepository.findByUniqueId(attachmentId).orElseThrow(() -> new NoSuchElementPresentException(String.valueOf(attachmentId)));
+    }
+
+    public void addRefToAttachment(UUID attachmentId) throws NoSuchElementPresentException {
+        BlogAttachment attachment = getBlogAttachment(attachmentId);
+        attachment.setRefCount(attachment.getRefCount() + 1);
+        blogAttRepository.save(attachment);
+    }
+
+    public void removeAttachment(UUID attachmentId) throws NoSuchElementPresentException {
+        BlogAttachment attachment = getBlogAttachment(attachmentId);
+        if(attachment.getRefCount() > 1) {
+            attachment.setRefCount(attachment.getRefCount() - 1);
+            blogAttRepository.save(attachment);
+        }
+        else {
+            blogAttRepository.delete(attachment);
+        }
     }
 }

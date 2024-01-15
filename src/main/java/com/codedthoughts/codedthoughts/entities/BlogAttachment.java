@@ -49,6 +49,9 @@ public class BlogAttachment extends BaseEntity{
     @Column(name = "checksum")
     private String checksum;
 
+    @Column(name = "ref_count")
+    private Integer refCount;
+
     @Column(name = "blog_unique_id")
     private UUID blogId;
 
