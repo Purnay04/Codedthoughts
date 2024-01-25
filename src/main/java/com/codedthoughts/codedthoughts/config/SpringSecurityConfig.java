@@ -58,7 +58,7 @@ public class SpringSecurityConfig {
             .authorizeHttpRequests((requestCustomizer) -> requestCustomizer
                     // Our public endpoints
                     .requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("api/blog/get-att/**").permitAll()
+                    .requestMatchers("api/blog/attachment/**").permitAll()
                     // Our private endpoints
                     .anyRequest().authenticated()
             )
