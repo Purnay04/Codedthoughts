@@ -8,12 +8,14 @@ import com.codedthoughts.codedthoughts.repo.BlogRepository;
 import com.codedthoughts.codedthoughts.views.BlogView;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -135,8 +137,9 @@ public class BlogService {
     }
 
     @Transactional
-    public void createBlog(BlogView blogView) {
+    public void createBlog(BlogView blogView) throws UsernameNotFoundException {
         Set<BlogAttachment> blogAttachments = fetchAllInlineAttachmentFromContent(blogView.getContents(), blogView.getBlogId());
+        String userName = userService.getCurrentUsername();
         Blog newBlog = Blog
                 .builder()
                 .uniqueId(blogView.getBlogId())
@@ -144,7 +147,7 @@ public class BlogService {
                 .sub_title(blogView.getBlogSubTitle())
                 .contents(blogView.getContents())
                 .inlineAttachments(blogAttachments)
-                .user(userService.getUserByUserName(blogView.getUsername()))
+                .user(userService.getUserByUserName(StringUtils.defaultString(userName, "")))
                 .isPrivate(false)
                 .likes(0)
                 .build();
@@ -171,7 +174,7 @@ public class BlogService {
         this.blogRepository.save(blog);
     }
 
-    public void saveBlog(BlogView blogView) {
+    public void saveBlog(BlogView blogView) throws UsernameNotFoundException{
         Blog blog = this.checkBlogExist(blogView.getBlogId());
         if(ObjectUtils.isEmpty(blog)) {
             this.createBlog(blogView);

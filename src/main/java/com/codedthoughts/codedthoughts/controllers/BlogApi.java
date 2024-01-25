@@ -49,7 +49,6 @@ public class BlogApi {
                         .blogTitle(blog.getTitle())
                         .blogSubTitle(blog.getSub_title())
                         .contents(blog.getContents())
-                        .username(blog.getUser().getUsername())
                         .likes(blog.getLikes())
                         .created_on(blog.getCreatedOn())
                         .build());
@@ -72,7 +71,6 @@ public class BlogApi {
                     .blogTitle(blog.getTitle())
                     .blogSubTitle(blog.getSub_title())
                     .contents(blog.getContents())
-                    .username(blog.getUser().getUsername())
                     .likes(blog.getLikes())
                     .created_on(blog.getCreatedOn())
                     .build();

@@ -15,9 +15,8 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 public class BlogView {
-    private UUID blogId;
+    @NotNull private UUID blogId;
     @NotNull private String blogTitle;
-    @NotNull private String username;
     private String blogSubTitle;
     private String contents;
     private Date created_on;

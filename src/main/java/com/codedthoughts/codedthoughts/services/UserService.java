@@ -4,11 +4,14 @@ import com.codedthoughts.codedthoughts.entities.User;
 import com.codedthoughts.codedthoughts.exceptions.UserAlreadyExistException;
 import com.codedthoughts.codedthoughts.repo.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 import java.util.Optional;
 
@@ -42,5 +45,10 @@ public class UserService implements UserDetailsService {
         else if(userRepository.findByUserName(user.getUsername()).isPresent())
             throw new UserAlreadyExistException(user.getUsername());
         userRepository.save(user);
+    }
+
+    public String getCurrentUsername() throws UsernameNotFoundException{
+        Optional<Authentication> authentication = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication());
+        return authentication.orElseThrow(() -> new UsernameNotFoundException("User not exist")).getName();
     }
 }
