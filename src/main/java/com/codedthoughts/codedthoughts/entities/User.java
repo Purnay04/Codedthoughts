@@ -62,6 +62,14 @@ public class User extends BaseEntity implements UserDetails {
     )
     private Set<Blog> bookmarks = new HashSet<>();
 
+    @ManyToMany(cascade = CascadeType.REMOVE)
+    @JoinTable(
+            name="ctbloglikes",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "blog_id")
+    )
+    private Set<Blog> likedBlogs  = new HashSet<>();
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));

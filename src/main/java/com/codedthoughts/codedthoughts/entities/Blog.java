@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.util.CollectionUtils;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -39,9 +40,6 @@ public class Blog extends BaseEntity{
     @Column(name = "sub_title")
     private String sub_title;
 
-    @Column(name = "likes")
-    private long likes;
-
     @Column(name = "isPrivate", columnDefinition = "TINYINT(1)")
     private boolean isPrivate;
 
@@ -58,6 +56,9 @@ public class Blog extends BaseEntity{
     @ManyToMany(mappedBy = "bookmarks", cascade = CascadeType.REMOVE)
     private Set<User> bookmarkBy;
 
+    @ManyToMany(mappedBy = "likedBlogs")
+    private Set<User> likedByUsers = new HashSet<>();
+
     @PrePersist
     public void prePersist() {
         if(!CollectionUtils.isEmpty(inlineAttachments)) {
@@ -66,6 +67,10 @@ public class Blog extends BaseEntity{
                 att.setBlog(this);
             });
         }
+    }
+
+    public long getLikes() {
+         return likedByUsers.size();
     }
 
     @Override

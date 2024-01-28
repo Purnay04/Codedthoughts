@@ -3,6 +3,7 @@ package com.codedthoughts.codedthoughts.controllers;
 import com.codedthoughts.codedthoughts.entities.Blog;
 import com.codedthoughts.codedthoughts.entities.BlogAttachment;
 import com.codedthoughts.codedthoughts.exceptions.NoSuchElementPresentException;
+import com.codedthoughts.codedthoughts.exceptions.UserActionInvalidException;
 import com.codedthoughts.codedthoughts.services.BlogService;
 import com.codedthoughts.codedthoughts.views.BlogView;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.util.InvalidMimeTypeException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,17 +44,16 @@ public class BlogApi {
     public ResponseEntity<?> getBlogs() {
         List<BlogView> blogs = new ArrayList<>();
         try {
-            blogService.fetchAllBlogs().forEach(blog -> {
-                blogs.add(BlogView
-                        .builder()
-                        .blogId(blog.getUniqueId())
-                        .blogTitle(blog.getTitle())
-                        .blogSubTitle(blog.getSub_title())
-                        .contents(blog.getContents())
-                        .likes(blog.getLikes())
-                        .created_on(blog.getCreatedOn())
-                        .build());
-            });
+            blogService.fetchAllBlogs().forEach(blog -> blogs.add(BlogView
+                    .builder()
+                    .blogId(blog.getUniqueId())
+                    .blogTitle(blog.getTitle())
+                    .blogSubTitle(blog.getSub_title())
+                    .contents(blog.getContents())
+                    .likes(blog.getLikes())
+                    .created_on(blog.getCreatedOn())
+                    .authorDetails(new BlogView.AuthorDetails(blog.getUser().getUsername()))
+                    .build()));
         } catch (Exception e) {
             logger.debug(String.format("Exception at /blog/dashboard-blogs api: %s", e.getMessage()));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -73,6 +74,7 @@ public class BlogApi {
                     .contents(blog.getContents())
                     .likes(blog.getLikes())
                     .created_on(blog.getCreatedOn())
+                    .authorDetails(new BlogView.AuthorDetails(blog.getUser().getUsername()))
                     .build();
         } catch (NoSuchElementPresentException nosep) {
             logger.debug(String.format("NoSuchElementPresentException at /blog/view api: %s", nosep.getMessage()));
@@ -145,5 +147,23 @@ public class BlogApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("{blogId}/action")
+    public ResponseEntity<?> addUserLike(@PathVariable("blogId") UUID blogId, @RequestParam("action") String action) {
+        Map<String, Object> actionResponse;
+        try {
+            actionResponse = this.blogService.handleUserAction(blogId, action);
+        } catch(UsernameNotFoundException unfe) {
+            logger.debug(unfe.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(unfe.getMessage());
+        } catch ( UserActionInvalidException uaie) {
+            logger.debug(uaie.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(uaie.getMessage());
+        } catch (NoSuchElementPresentException | IllegalArgumentException e) {
+            logger.debug(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        return ResponseEntity.ok().body(actionResponse);
     }
 }

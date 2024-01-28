@@ -1,6 +1,5 @@
 package com.codedthoughts.codedthoughts.views;
 
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,4 +20,14 @@ public class BlogView {
     private String contents;
     private Date created_on;
     private Long likes;
+    private Boolean likedByUser;
+    private AuthorDetails authorDetails;
+
+    @Builder
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class AuthorDetails {
+        private String username;
+    }
 }

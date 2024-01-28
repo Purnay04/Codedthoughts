@@ -8,6 +8,11 @@ import java.util.function.Supplier;
 @Getter
 public class NoSuchElementPresentException extends RuntimeException {
     String msg;
+
+    public NoSuchElementPresentException() {
+        super("Given element is not present");
+    }
+
     public NoSuchElementPresentException(String token) {
         super("No such %s element present".formatted(token));
         msg = String.format("No such %s element present", token);

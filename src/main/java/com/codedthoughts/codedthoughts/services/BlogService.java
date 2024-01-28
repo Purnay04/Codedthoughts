@@ -2,10 +2,15 @@ package com.codedthoughts.codedthoughts.services;
 
 import com.codedthoughts.codedthoughts.entities.Blog;
 import com.codedthoughts.codedthoughts.entities.BlogAttachment;
+import com.codedthoughts.codedthoughts.entities.User;
+import com.codedthoughts.codedthoughts.enums.BlogAction;
 import com.codedthoughts.codedthoughts.exceptions.NoSuchElementPresentException;
+import com.codedthoughts.codedthoughts.exceptions.UserActionInvalidException;
 import com.codedthoughts.codedthoughts.repo.BlogAttachmentRepository;
 import com.codedthoughts.codedthoughts.repo.BlogRepository;
 import com.codedthoughts.codedthoughts.views.BlogView;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +48,9 @@ public class BlogService {
     private final UserService userService;
     private final BlogAttachmentRepository blogAttRepository;
     private final SystemPropertiesService sysPropService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public Blob convertByteArrayToBlob(byte[] byteArray) {
         try {
@@ -132,8 +140,8 @@ public class BlogService {
         return Set.of();
     }
 
-    public Blog checkBlogExist(UUID blogId) {
-        return this.blogRepository.findByUniqueIdWithInlineAttachments(blogId).orElse(null);
+    public Optional<Blog> checkBlogExist(UUID blogId) {
+        return this.blogRepository.findByUniqueIdWithInlineAttachments(blogId);
     }
 
     @Transactional
@@ -149,7 +157,6 @@ public class BlogService {
                 .inlineAttachments(blogAttachments)
                 .user(userService.getUserByUserName(StringUtils.defaultString(userName, "")))
                 .isPrivate(false)
-                .likes(0)
                 .build();
         blogRepository.save(newBlog);
     }
@@ -175,12 +182,12 @@ public class BlogService {
     }
 
     public void saveBlog(BlogView blogView) throws UsernameNotFoundException{
-        Blog blog = this.checkBlogExist(blogView.getBlogId());
-        if(ObjectUtils.isEmpty(blog)) {
+        Optional<Blog> blog = this.checkBlogExist(blogView.getBlogId());
+        if(blog.isEmpty()) {
             this.createBlog(blogView);
             return;
         }
-        this.updateBlog(blogView, blog);
+        this.updateBlog(blogView, blog.get());
     }
 
     @Transactional(readOnly = true)
@@ -249,5 +256,48 @@ public class BlogService {
         else {
             blogAttRepository.delete(attachment);
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {UsernameNotFoundException.class, NoSuchElementPresentException.class})
+    public Map<String, Object> handleUserAction(UUID blogId, String action) throws UsernameNotFoundException, NoSuchElementPresentException, IllegalArgumentException {
+        if(org.apache.commons.lang3.ObjectUtils.isEmpty(blogId)) {
+            throw new NoSuchElementPresentException();
+        }
+        User user = userService.getUserByUserName(StringUtils.defaultString(userService.getCurrentUsername(), ""));
+        Blog blog = this.checkBlogExist(blogId).orElseThrow(NoSuchElementPresentException::new);
+        BlogAction blogAction = BlogAction.valueOf(action);
+        return switch (blogAction) {
+            case LIKE, DISLIKE -> handleUserLike(user, blog, blogAction);
+            case ADD_BOOKMARK, REMOVE_BOOKMARK -> handleBlogBookmark(user, blog, blogAction);
+            default -> throw new UserActionInvalidException(action);
+        };
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    private Map<String, Object> handleUserLike(User user, Blog blog, BlogAction action) {
+        boolean isBlogLiked = user.getLikedBlogs().contains(blog);
+        if (action.equals(BlogAction.LIKE) && !isBlogLiked) {
+            user.getLikedBlogs().add(blog);
+            blog.getLikedByUsers().add(user); 
+        } else if(action.equals(BlogAction.DISLIKE) && isBlogLiked) {
+            user.getLikedBlogs().remove(blog);
+            blog.getLikedByUsers().remove(user);
+        }
+        entityManager.flush();
+        return Map.of("likes", blog.getLikes());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    private Map<String, Object> handleBlogBookmark(User user, Blog blog, BlogAction action) {
+        boolean isBlogBookmarked = user.getBookmarks().contains(blog);
+        if(action.equals(BlogAction.ADD_BOOKMARK) && !isBlogBookmarked) {
+            user.getBookmarks().add(blog);
+            blog.getBookmarkBy().add(user);
+        } else if (action.equals(BlogAction.REMOVE_BOOKMARK) && isBlogBookmarked) {
+            user.getBookmarks().remove(blog);
+            blog.getBookmarkBy().remove(user);
+        }
+        entityManager.flush();
+        return Map.of();
     }
 }
